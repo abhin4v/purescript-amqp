@@ -1,5 +1,6 @@
 {
   "name": "purescript-amqp",
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",
@@ -16,5 +17,11 @@
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
+  },
+  "keywords": ["amqp", "amqp-client", "purescript"],
+  "authors": ["Abhinav Sarkar <abhinav@abhinavsarkar.net>"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abhin4v/purescript-amqp.git"
   }
 }
