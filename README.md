@@ -1,6 +1,6 @@
 # purescript-amqp
 
-A PureScript wrapper for [amqplib](https://github.com/squaremo/amqp.node).
+A PureScript wrapper for [amqplib](https://github.com/squaremo/amqp.node) compatible with AMQP 0.9.1.
 
 Documentation can be found at `docs/Node.AMQP.md`.
 
