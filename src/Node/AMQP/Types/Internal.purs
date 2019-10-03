@@ -1,20 +1,19 @@
 module Node.AMQP.Types.Internal where
 
-import Node.AMQP.Types
-import Prelude
+import Node.AMQP.Types (ConnectOptions, ConsumeOptions, DeleteExchangeOptions, DeleteQueueOptions, ExchangeOptions, GetOptions, Message, MessageFields, PublishOptions, QueueName, QueueOptions, RoutingKey)
+import Prelude (join, show, ($), (<$>), (<<<), (<>), (==), (>>>))
 
-import Control.Monad.Eff (kind Effect)
 import Data.DateTime.Instant (instant, unInstant)
-import Data.Foreign (Foreign)
-import Data.Foreign.Class (class Encode, encode)
-import Data.Foreign.Generic (defaultOptions, genericEncode)
-import Data.Foreign.NullOrUndefined (NullOrUndefined(..))
+import Foreign (Foreign)
+import Foreign.Class (class Encode, encode)
+import Foreign.Generic (defaultOptions, genericEncode)
 import Data.Generic.Rep (class Generic)
 import Data.Int (floor, hexadecimal, toStringAs)
 import Data.Newtype (unwrap)
 import Data.Nullable (Nullable, toMaybe)
-import Data.StrMap as StrMap
+import Data.Maybe (Maybe)
 import Data.Time.Duration (Milliseconds(..), Seconds(..))
+import Foreign.Object (Object)
 import Node.Buffer (Buffer)
 
 connectUrl :: String -> ConnectOptions -> String
@@ -45,16 +44,16 @@ encodeGetOptions :: GetOptions -> Foreign
 encodeGetOptions = fromGetOptions >>> encode
 
 newtype QueueOptions' = QueueOptions'
-                      { exclusive            :: NullOrUndefined Boolean
-                      , durable              :: NullOrUndefined Boolean
-                      , autoDelete           :: NullOrUndefined Boolean
-                      , arguments            :: StrMap.StrMap Foreign
-                      , messageTtl           :: NullOrUndefined Number
-                      , expires              :: NullOrUndefined Number
-                      , deadLetterExchange   :: NullOrUndefined String
-                      , deadLetterRoutingKey :: NullOrUndefined String
-                      , maxLength            :: NullOrUndefined Int
-                      , maxPriority          :: NullOrUndefined Int
+                      { exclusive            :: Maybe Boolean
+                      , durable              :: Maybe Boolean
+                      , autoDelete           :: Maybe Boolean
+                      , arguments            :: Object Foreign
+                      , messageTtl           :: Maybe Number
+                      , expires              :: Maybe Number
+                      , deadLetterExchange   :: Maybe String
+                      , deadLetterRoutingKey :: Maybe String
+                      , maxLength            :: Maybe Int
+                      , maxPriority          :: Maybe Int
                       }
 
 derive instance genericQueueOptions' :: Generic QueueOptions' _
@@ -64,21 +63,21 @@ instance encodeQueueOptions' :: Encode QueueOptions' where
 
 fromQueueOptions :: QueueOptions -> QueueOptions'
 fromQueueOptions opts = QueueOptions'
-                      { exclusive           :  NullOrUndefined opts.exclusive
-                      , durable             :  NullOrUndefined opts.durable
-                      , autoDelete          :  NullOrUndefined opts.autoDelete
+                      { exclusive           :  opts.exclusive
+                      , durable             :  opts.durable
+                      , autoDelete          :  opts.autoDelete
                       , arguments           :  opts.arguments
-                      , messageTtl          :  NullOrUndefined (unwrap <$> opts.messageTTL)
-                      , expires             :  NullOrUndefined (unwrap <$> opts.expires)
-                      , deadLetterExchange  :  NullOrUndefined opts.deadLetterExchange
-                      , deadLetterRoutingKey:  NullOrUndefined opts.deadLetterRoutingKey
-                      , maxLength           :  NullOrUndefined opts.maxLength
-                      , maxPriority         :  NullOrUndefined opts.maxPriority
+                      , messageTtl          :  (unwrap <$> opts.messageTTL)
+                      , expires             :  (unwrap <$> opts.expires)
+                      , deadLetterExchange  :  opts.deadLetterExchange
+                      , deadLetterRoutingKey:  opts.deadLetterRoutingKey
+                      , maxLength           :  opts.maxLength
+                      , maxPriority         :  opts.maxPriority
                       }
 
 newtype DeleteQueueOptions' = DeleteQueueOptions'
-                            { ifUnused :: NullOrUndefined Boolean
-                            , ifEmpty  :: NullOrUndefined Boolean }
+                            { ifUnused :: Maybe Boolean
+                            , ifEmpty  :: Maybe Boolean }
 
 derive instance genericDeleteQueueOptions' :: Generic DeleteQueueOptions' _
 
@@ -87,16 +86,16 @@ instance encodeDeleteQueueOptions' :: Encode DeleteQueueOptions' where
 
 fromDeleteQueueOptions :: DeleteQueueOptions -> DeleteQueueOptions'
 fromDeleteQueueOptions opts = DeleteQueueOptions'
-                            { ifUnused: NullOrUndefined opts.ifUnused
-                            , ifEmpty : NullOrUndefined opts.ifEmpty
+                            { ifUnused: opts.ifUnused
+                            , ifEmpty : opts.ifEmpty
                             }
 
 newtype ExchangeOptions' = ExchangeOptions'
-                         { durable           :: NullOrUndefined Boolean
-                         , internal          :: NullOrUndefined Boolean
-                         , autoDelete        :: NullOrUndefined Boolean
-                         , alternateExchange :: NullOrUndefined String
-                         , arguments         :: StrMap.StrMap Foreign
+                         { durable           :: Maybe Boolean
+                         , internal          :: Maybe Boolean
+                         , autoDelete        :: Maybe Boolean
+                         , alternateExchange :: Maybe String
+                         , arguments         :: Object Foreign
                          }
 
 derive instance genericExchangeOptions' :: Generic ExchangeOptions' _
@@ -106,14 +105,14 @@ instance encodeExchangeOptions' :: Encode ExchangeOptions' where
 
 fromExchangeOptions :: ExchangeOptions -> ExchangeOptions'
 fromExchangeOptions opts = ExchangeOptions'
-                         { durable          : NullOrUndefined opts.durable
-                         , internal         : NullOrUndefined opts.internal
-                         , autoDelete       : NullOrUndefined opts.autoDelete
-                         , alternateExchange: NullOrUndefined opts.alternateExchange
+                         { durable          : opts.durable
+                         , internal         : opts.internal
+                         , autoDelete       : opts.autoDelete
+                         , alternateExchange: opts.alternateExchange
                          , arguments        : opts.arguments
                          }
 
-newtype DeleteExchangeOptions' = DeleteExchangeOptions' { ifUnused :: NullOrUndefined Boolean }
+newtype DeleteExchangeOptions' = DeleteExchangeOptions' { ifUnused :: Maybe Boolean }
 
 derive instance genericDeleteExchangeOptions' :: Generic DeleteExchangeOptions' _
 
@@ -121,25 +120,25 @@ instance encodeDeleteExchangeOptions' :: Encode DeleteExchangeOptions' where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
 
 fromDeleteExchangeOptions :: DeleteExchangeOptions -> DeleteExchangeOptions'
-fromDeleteExchangeOptions opts = DeleteExchangeOptions' { ifUnused: NullOrUndefined opts.ifUnused }
+fromDeleteExchangeOptions opts = DeleteExchangeOptions' { ifUnused: opts.ifUnused }
 
 newtype PublishOptions' = PublishOptions'
-                        { expiration      :: NullOrUndefined String
-                        , userId          :: NullOrUndefined String
+                        { expiration      :: Maybe String
+                        , userId          :: Maybe String
                         , "CC"            :: Array RoutingKey
                         , "BCC"           :: Array RoutingKey
-                        , priority        :: NullOrUndefined Int
-                        , persistent      :: NullOrUndefined Boolean
-                        , mandatory       :: NullOrUndefined Boolean
-                        , contentType     :: NullOrUndefined String
-                        , contentEncoding :: NullOrUndefined String
-                        , headers         :: StrMap.StrMap Foreign
-                        , correlationId   :: NullOrUndefined String
-                        , replyTo         :: NullOrUndefined QueueName
-                        , messageId       :: NullOrUndefined String
-                        , timestamp       :: NullOrUndefined Number
-                        , type            :: NullOrUndefined String
-                        , appId           :: NullOrUndefined String
+                        , priority        :: Maybe Int
+                        , persistent      :: Maybe Boolean
+                        , mandatory       :: Maybe Boolean
+                        , contentType     :: Maybe String
+                        , contentEncoding :: Maybe String
+                        , headers         :: Object Foreign
+                        , correlationId   :: Maybe String
+                        , replyTo         :: Maybe QueueName
+                        , messageId       :: Maybe String
+                        , timestamp       :: Maybe Number
+                        , type            :: Maybe String
+                        , appId           :: Maybe String
                         }
 
 derive instance genericPublishOptions' :: Generic PublishOptions' _
@@ -149,22 +148,22 @@ instance encodePublishOptions' :: Encode PublishOptions' where
 
 fromPublishOptions :: PublishOptions -> PublishOptions'
 fromPublishOptions opts = PublishOptions'
-                        { expiration     : NullOrUndefined (show <$> opts.expiration)
-                        , userId         : NullOrUndefined opts.userId
+                        { expiration     : (show <$> opts.expiration)
+                        , userId         : opts.userId
                         , "CC"           : opts.cc
                         , "BCC"          : opts.bcc
-                        , priority       : NullOrUndefined opts.priority
-                        , persistent     : NullOrUndefined opts.persistent
-                        , mandatory      : NullOrUndefined opts.mandatory
-                        , contentType    : NullOrUndefined opts.contentType
-                        , contentEncoding: NullOrUndefined opts.contentEncoding
+                        , priority       : opts.priority
+                        , persistent     : opts.persistent
+                        , mandatory      : opts.mandatory
+                        , contentType    : opts.contentType
+                        , contentEncoding: opts.contentEncoding
                         , headers        : opts.headers
-                        , correlationId  : NullOrUndefined opts.correlationId
-                        , replyTo        : NullOrUndefined opts.replyTo
-                        , messageId      : NullOrUndefined opts.messageId
-                        , timestamp      : NullOrUndefined ((unwrap <<< unInstant) <$> opts.timestamp)
-                        , type           : NullOrUndefined opts.type
-                        , appId          : NullOrUndefined opts.appId
+                        , correlationId  : opts.correlationId
+                        , replyTo        : opts.replyTo
+                        , messageId      : opts.messageId
+                        , timestamp      : ((unwrap <<< unInstant) <$> opts.timestamp)
+                        , type           : opts.type
+                        , appId          : opts.appId
                         }
 
 newtype MessageProperties' = MessageProperties'
@@ -174,7 +173,7 @@ newtype MessageProperties' = MessageProperties'
                            , deliveryMode    :: Nullable Int
                            , contentType     :: Nullable String
                            , contentEncoding :: Nullable String
-                           , headers         :: StrMap.StrMap Foreign
+                           , headers         :: Object Foreign
                            , correlationId   :: Nullable String
                            , replyTo         :: Nullable QueueName
                            , messageId       :: Nullable String
@@ -209,12 +208,12 @@ toMessage (Message' { content, fields, properties: (MessageProperties' props) })
                     }
 
 newtype ConsumeOptions' = ConsumeOptions'
-                        { consumerTag :: NullOrUndefined String
-                        , noLocal     :: NullOrUndefined Boolean
-                        , noAck       :: NullOrUndefined Boolean
-                        , exclusive   :: NullOrUndefined Boolean
-                        , priority    :: NullOrUndefined Int
-                        , arguments   :: StrMap.StrMap Foreign
+                        { consumerTag :: Maybe String
+                        , noLocal     :: Maybe Boolean
+                        , noAck       :: Maybe Boolean
+                        , exclusive   :: Maybe Boolean
+                        , priority    :: Maybe Int
+                        , arguments   :: Object Foreign
                         }
 
 derive instance genericConsumeOptions' :: Generic ConsumeOptions' _
@@ -224,15 +223,15 @@ instance encodeConsumeOptions' :: Encode ConsumeOptions' where
 
 fromConsumeOptions :: ConsumeOptions -> ConsumeOptions'
 fromConsumeOptions opts = ConsumeOptions'
-                        { consumerTag: NullOrUndefined opts.consumerTag
-                        , noLocal    : NullOrUndefined opts.noLocal
-                        , noAck      : NullOrUndefined opts.noAck
-                        , exclusive  : NullOrUndefined opts.exclusive
-                        , priority   : NullOrUndefined opts.priority
+                        { consumerTag: opts.consumerTag
+                        , noLocal    : opts.noLocal
+                        , noAck      : opts.noAck
+                        , exclusive  : opts.exclusive
+                        , priority   : opts.priority
                         , arguments  : opts.arguments
                         }
 
-newtype GetOptions' = GetOptions' { noAck :: NullOrUndefined Boolean }
+newtype GetOptions' = GetOptions' { noAck :: Maybe Boolean }
 
 derive instance genericGetOptions' :: Generic GetOptions' _
 
@@ -240,4 +239,4 @@ instance encodeGetOptions' :: Encode GetOptions' where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
 
 fromGetOptions :: GetOptions -> GetOptions'
-fromGetOptions opts = GetOptions' { noAck: NullOrUndefined opts.noAck }
+fromGetOptions opts = GetOptions' { noAck: opts.noAck }

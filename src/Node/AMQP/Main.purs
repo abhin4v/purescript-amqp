@@ -3,24 +3,19 @@ module Node.AMQP.Main where
 import Node.AMQP
 import Prelude
 
-import Control.Monad.Aff (delay, runAff)
-import Control.Monad.Eff (Eff, kind Effect)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
-import Control.Monad.Eff.Exception (EXCEPTION)
+import Effect.Aff (delay, runAff)
+import Effect (Effect, kind Effect)
+import Effect.Class (liftEff)
+import Effect.Console (CONSOLE, log, logShow)
+import Effect.Exception (EXCEPTION)
 import Data.Maybe (Maybe(..))
-import Data.StrMap as StrMap
 import Data.Time.Duration (Milliseconds(..))
+import Foreign.Object
 import Node.Buffer (BUFFER, fromString, toString)
 import Node.Encoding (Encoding(..))
 import Node.Process (PROCESS)
 
-main :: forall eff. Eff ( console   :: CONSOLE
-                        , amqp      :: AMQP
-                        , exception :: EXCEPTION
-                        , process   :: PROCESS
-                        , buffer    :: BUFFER
-                        | eff ) Unit
+main :: Effect Unit
 main = do
   log "Starting"
   content <- fromString "test123" UTF8
@@ -75,7 +70,7 @@ main = do
       assertExchange channel x Fanout defaultExchangeOptions
       liftEff $ log $ "Exchange created"
 
-      bindQueue channel q x "*" StrMap.empty
+      bindQueue channel q x "*" FO.empty
       liftEff $ log $ "Queue bound"
 
       publish channel x "" content $ defaultPublishOptions { persistent = Just false }
@@ -98,7 +93,7 @@ main = do
           toString UTF8 msg.content >>= \m -> log $ "Get Received: " <> m
           nackAllUpTo channel msg.fields.deliveryTag true
 
-      unbindQueue channel q x "*" StrMap.empty
+      unbindQueue channel q x "*" FO.empty
       liftEff $ log $ "Queue unbound"
 
       deleteExchange channel x defaultDeleteExchangeOptions
