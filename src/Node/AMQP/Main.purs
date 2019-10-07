@@ -1,31 +1,32 @@
 module Node.AMQP.Main where
 
 import Node.AMQP
-import Prelude
+import Prelude (Unit, bind, discard, pure, show, void, ($), (*>), (<>), (>>=))
 
 import Effect.Aff (delay, runAff)
-import Effect (Effect, kind Effect)
-import Effect.Class (liftEff)
-import Effect.Console (CONSOLE, log, logShow)
-import Effect.Exception (EXCEPTION)
+import Effect (Effect)
+import Effect.Class (liftEffect)
+import Effect.Console (log, logShow)
+
+import Data.Either (either)
 import Data.Maybe (Maybe(..))
 import Data.Time.Duration (Milliseconds(..))
-import Foreign.Object
-import Node.Buffer (BUFFER, fromString, toString)
+import Foreign.Object (empty)
+import Node.Buffer (fromString, toString)
 import Node.Encoding (Encoding(..))
-import Node.Process (PROCESS)
+
 
 main :: Effect Unit
 main = do
   log "Starting"
   content <- fromString "test123" UTF8
-  void $ runAff (\e -> log "ERRORAFF" *> logShow e) pure do
+  void $ runAff (either (\e -> log "ERRORAFF" *> logShow e) pure) do
     conn <- connect "amqp://localhost" defaultConnectOptions
-    liftEff $ log "Connected"
+    liftEffect $ log "Connected"
     let q = "queue111"
         x = "exc2222"
 
-    liftEff $ do
+    liftEffect $ do
       onConnectionClose conn $ case _ of
         Just err -> log $ "E: Conn closed: " <> show err
         Nothing  -> log "E: Conn closed"
@@ -34,10 +35,10 @@ main = do
       onConnectionUnblocked conn (log "E: Conn unblocked")
 
     withChannel conn \channel -> do
-      liftEff $ log "Channel created"
+      liftEffect $ log "Channel created"
       prefetch channel 10
 
-      liftEff $ do
+      liftEffect $ do
         onChannelClose channel (log "E: Channel close")
         onChannelError channel \err -> log $ "E: Channel errored: " <> show err
         onChannelReturn channel \msg ->
@@ -45,62 +46,62 @@ main = do
         onChannelDrain channel (log "E: Channel drained")
 
       ok <- assertQueue channel q defaultQueueOptions
-      liftEff $ log $ "Queue created: " <> ok.queue
+      liftEffect $ log $ "Queue created: " <> ok.queue
 
       consumeChannel <- createChannel conn
-      liftEff $ onChannelClose consumeChannel (log "E: Consume Channel close")
+      liftEffect $ onChannelClose consumeChannel (log "E: Consume Channel close")
 
       recover consumeChannel
 
       ok <- consume consumeChannel q defaultConsumeOptions $ case _ of
         Nothing -> do
           log "Consumer closed"
-          void $ runAff logShow logShow $ closeChannel consumeChannel
+          void $ runAff (either logShow logShow) $ closeChannel consumeChannel
         Just msg -> do
           toString UTF8 msg.content >>= \m -> log $ "Received: " <> m
           ack consumeChannel msg.fields.deliveryTag
           logShow msg.properties.persistent
 
       let consumerTag = ok.consumerTag
-      liftEff $ log $ "Consumer tag: " <> ok.consumerTag
+      liftEffect $ log $ "Consumer tag: " <> ok.consumerTag
 
       ok <- purgeQueue channel q
-      liftEff $ log $ "Queue purged: " <> show ok.messageCount
+      liftEffect $ log $ "Queue purged: " <> show ok.messageCount
 
       assertExchange channel x Fanout defaultExchangeOptions
-      liftEff $ log $ "Exchange created"
+      liftEffect $ log $ "Exchange created"
 
-      bindQueue channel q x "*" FO.empty
-      liftEff $ log $ "Queue bound"
+      bindQueue channel q x "*" empty
+      liftEffect $ log $ "Queue bound"
 
       publish channel x "" content $ defaultPublishOptions { persistent = Just false }
-      liftEff $ log $ "Message published to exchange"
+      liftEffect $ log $ "Message published to exchange"
 
       delay (Milliseconds 500.0)
 
-      liftEff $ ackAll consumeChannel
+      liftEffect $ ackAll consumeChannel
       cancel consumeChannel consumerTag
       closeChannel consumeChannel
 
       sendToQueue channel q content $ defaultPublishOptions { persistent = Just true }
-      liftEff $ log $ "Message published to queue"
+      liftEffect $ log $ "Message published to queue"
 
       delay (Milliseconds 500.0)
 
       get channel q defaultGetOptions >>= case _ of
-        Nothing -> liftEff $ log "No message received"
-        Just msg -> liftEff do
+        Nothing -> liftEffect $ log "No message received"
+        Just msg -> liftEffect do
           toString UTF8 msg.content >>= \m -> log $ "Get Received: " <> m
           nackAllUpTo channel msg.fields.deliveryTag true
 
-      unbindQueue channel q x "*" FO.empty
-      liftEff $ log $ "Queue unbound"
+      unbindQueue channel q x "*" empty
+      liftEffect $ log $ "Queue unbound"
 
       deleteExchange channel x defaultDeleteExchangeOptions
-      liftEff $ log $ "Exchange deleted"
+      liftEffect $ log $ "Exchange deleted"
 
       ok <- deleteQueue channel q defaultDeleteQueueOptions
-      liftEff $ log $ "Queue deleted: " <> show ok.messageCount
+      liftEffect $ log $ "Queue deleted: " <> show ok.messageCount
 
     close conn
-    liftEff $ log $ "Connection closed"
+    liftEffect $ log $ "Connection closed"
