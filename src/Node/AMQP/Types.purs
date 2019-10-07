@@ -2,21 +2,17 @@ module Node.AMQP.Types where
 
 import Prelude
 
-import Control.Monad.Eff (kind Effect)
 import Control.Plus (empty)
 import Data.DateTime.Instant (Instant)
-import Data.Foreign (Foreign)
+import Foreign (Foreign)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..))
-import Data.StrMap as StrMap
 import Data.String (toLower)
 import Data.Time.Duration (Milliseconds, Seconds(..))
+import Foreign.Object as FO
 import Node.Buffer (Buffer)
-
--- | The effect for computations which talk to an AMQP server.
-foreign import data AMQP       :: Effect
 
 -- | An AMQP connection.
 foreign import data Connection :: Type
@@ -89,7 +85,7 @@ instance eqExchangeType :: Eq ExchangeType where
 type QueueOptions = { exclusive            :: Maybe Boolean
                     , durable              :: Maybe Boolean
                     , autoDelete           :: Maybe Boolean
-                    , arguments            :: StrMap.StrMap Foreign
+                    , arguments            :: FO.Object Foreign
                     , messageTTL           :: Maybe Milliseconds
                     , expires              :: Maybe Milliseconds
                     , deadLetterExchange   :: Maybe String
@@ -103,7 +99,7 @@ defaultQueueOptions :: QueueOptions
 defaultQueueOptions = { exclusive           : Nothing
                       , durable             : Nothing
                       , autoDelete          : Nothing
-                      , arguments           : StrMap.empty
+                      , arguments           : FO.empty
                       , messageTTL          : Nothing
                       , expires             : Nothing
                       , deadLetterExchange  : Nothing
@@ -135,7 +131,7 @@ type ExchangeOptions = { durable           :: Maybe Boolean
                        , internal          :: Maybe Boolean
                        , autoDelete        :: Maybe Boolean
                        , alternateExchange :: Maybe String
-                       , arguments         :: StrMap.StrMap Foreign
+                       , arguments         :: FO.Object Foreign
                        }
 
 -- | Default options to create an exchange. Every field is set to `Nothing` or `empty`.
@@ -144,7 +140,7 @@ defaultExchangeOptions = { durable          : Nothing
                          , internal         : Nothing
                          , autoDelete       : Nothing
                          , alternateExchange: Nothing
-                         , arguments        : StrMap.empty
+                         , arguments        : FO.empty
                          }
 
 -- | Options to delete an exchange:
@@ -189,7 +185,7 @@ type PublishOptions = { expiration      :: Maybe Milliseconds
                       , mandatory       :: Maybe Boolean
                       , contentType     :: Maybe String
                       , contentEncoding :: Maybe String
-                      , headers         :: StrMap.StrMap Foreign
+                      , headers         :: FO.Object Foreign
                       , correlationId   :: Maybe String
                       , replyTo         :: Maybe QueueName
                       , messageId       :: Maybe String
@@ -209,7 +205,7 @@ defaultPublishOptions = { expiration     : Nothing
                         , mandatory      : Nothing
                         , contentType    : Nothing
                         , contentEncoding: Nothing
-                        , headers        : StrMap.empty
+                        , headers        : FO.empty
                         , correlationId  : Nothing
                         , replyTo        : Nothing
                         , messageId      : Nothing
@@ -239,7 +235,7 @@ type MessageProperties = { expiration      :: Maybe Milliseconds
                          , persistent      :: Maybe Boolean
                          , contentType     :: Maybe String
                          , contentEncoding :: Maybe String
-                         , headers         :: StrMap.StrMap Foreign
+                         , headers         :: FO.Object Foreign
                          , correlationId   :: Maybe String
                          , replyTo         :: Maybe QueueName
                          , messageId       :: Maybe String
@@ -274,7 +270,7 @@ type ConsumeOptions = { consumerTag :: Maybe String
                       , noAck       :: Maybe Boolean
                       , exclusive   :: Maybe Boolean
                       , priority    :: Maybe Int
-                      , arguments   :: StrMap.StrMap Foreign
+                      , arguments   :: FO.Object Foreign
                       }
 
 -- | Default options to consume messages from a queue. Every field is set to `Nothing` or `empty`.
@@ -284,7 +280,7 @@ defaultConsumeOptions = { consumerTag: Nothing
                         , noAck      : Nothing
                         , exclusive  : Nothing
                         , priority   : Nothing
-                        , arguments  : StrMap.empty
+                        , arguments  : FO.empty
                         }
 
 -- | Reply from the server for setting up a consumer. Contains the consumer tag which is the unique
